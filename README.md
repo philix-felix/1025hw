@@ -3,6 +3,8 @@
 一款以成語「**書中自有黃金屋**」為靈感發想的 SwiftUI 互動式繪本風 App。  
 點擊「**心想事成**」按鈕即可隨機召喚 8 座不同主題的「屋」，且每座屋子底下皆有一本以 SwiftUI `Shape` 與漸層光影繪製的**打開魔法書**——書頁朝上翻開並向上投射動態光束、光暈與主題粒子，光芒色彩會隨屋子本身的特性而自動變化。
 
+> 💡 **AI 協作對話紀錄與重點程式碼講解**：請參閱 [AI_對話紀錄與重點程式碼講解.md](./AI_對話紀錄與重點程式碼講解.md)
+
 ---
 
 ## 📱 App 畫面預覽
@@ -42,18 +44,60 @@
 
 ---
 
+## 🧠 重點程式碼講解
+
+### 1. 資料模型與動態主題計算屬性（`maison.swift`）
+在 `maison` 結構中，除了儲存基本屬性（`image`、`nom`、`description`、`popularite`）外，還運用了 Swift 的**計算屬性（Computed Properties）**，讓每筆資料自動對應專屬的光芒顏色與粒子符號：
+
+```swift
+struct maison {
+    let image: String
+    let nom: String
+    let description: String
+    let popularite: Int
+
+    /// 主光芒顏色（依屋子本身而改變）
+    var primaryGlowColor: Color {
+        switch nom {
+        case "黃金":
+            return Color(red: 1.0, green: 0.84, blue: 0.15)
+        case "黃鐵礦":
+            return Color(red: 0.76, green: 0.68, blue: 0.22)
+        // ... 依不同屋子回傳專屬代表色
+        }
+    }
+}
+```
+透過 `primaryGlowColor`、`glowColors` 與 `sparkleSymbol` 三個計算屬性，讓 `ContentView` 不需撰寫重複的條件判斷即可直接套用主題色。
+
+### 2. 狀態管理與隨機抽屋動畫（`ContentView.swift`）
+- `@State private var selecteMaisonIndex = 0`：記錄目前顯示的屋子索引，點擊「心想事成」時以 `.random(in: maisons.indices)` 隨機抽取，並透過 `withAnimation(.spring(...))` 驅動平滑過渡動畫。
+- `@State private var isGlowing = false`：於 `.onAppear` 啟動 `.repeatForever(autoreverses: true)` 無限呼吸燈動畫，讓光束與粒子產生持續浮動的魔法感。
+
+### 3. 自訂 `Shape` 繪製朝上發光的打開書本（`GlowingOpenBookView`）
+`GlowingOpenBookView` 以 `ZStack(alignment: .bottom)` 疊加五個層次：
+1. **`UpwardLightConeShape`**：繪製由書頁往上擴散的梯形光束錐，搭配 `LinearGradient` 與 `.blur(radius: 14)` 營造柔和光霧。
+2. **放射狀光束條**：使用 `ForEach(0..<7)` 產生 7 道 `Capsule` 光束，並以 `.rotationEffect(.degrees(angle), anchor: .bottom)` 呈扇形朝上發散。
+3. **核心橢圓光暈**：以 `RadialGradient` 在書頁正上方製造高光核心。
+4. **主題微光粒子**：讀取 `maison.sparkleSymbol` 顯示對應 SF Symbols（如皇冠、鑽石、愛心、月桂冠、星星）。
+5. **立體書封與朝上拱起的書頁（`OpenBookCoverShape`、`OpenBookPagesShape`）**：利用二次貝茲曲線 `addQuadCurve(to:control:)` 將左右書頁控制點向上拉高，呈現書頁朝上翻開並受光發亮的立體感。
+
+---
+
 ## 🗂 專案結構
 
 ```text
 10.25 作業/
 ├── 10.25 作業/
-│   ├── MyApp.swift           # App 進入點 (@main)
-│   ├── ContentView.swift     # 主畫面、GlowingOpenBookView 與自訂書本/光束 Shape
-│   ├── maison.swift          # maison 資料模型與各屋子專屬光芒色彩/粒子屬性
-│   └── Assets.xcassets/      # 8 座屋子的圖片資源 (黃金、黃鐵礦、白金、白銀、鑽石、金珍妮、大維、米奇妙妙)
-├── maisonenor.png            # App 預覽截圖（黃金屋）
-├── maisondejennie.png        # App 預覽截圖（金珍妮屋）
-└── maisondempereur.png       # App 預覽截圖（大維屋）
+│   ├── MyApp.swift                     # App 進入點 (@main)
+│   ├── ContentView.swift               # 主畫面、GlowingOpenBookView 與自訂書本/光束 Shape
+│   ├── maison.swift                    # maison 資料模型與各屋子專屬光芒色彩/粒子屬性
+│   └── Assets.xcassets/                # 8 座屋子的圖片資源
+├── AI_對話紀錄與重點程式碼講解.md       # 與 AI 協作的完整對話整理與重點程式碼解析
+├── README.md                           # 專案說明文件
+├── maisonenor.png                      # App 預覽截圖（黃金屋）
+├── maisondejennie.png                  # App 預覽截圖（金珍妮屋）
+└── maisondempereur.png                 # App 預覽截圖（大維屋）
 ```
 
 ---
